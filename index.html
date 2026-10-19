@@ -3,208 +3,293 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skillet — обратный отсчёт</title>
-<meta name="theme-color" content="#0a0505">
+<title>Skillet — After the Storm — Кишинёв</title>
+<meta name="theme-color" content="#0b0e11">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #070404;
-    --red: #e10f1b;
-    --red-hot: #ff3b2f;
-    --ember: #ff8a2a;
-    --steel: #b9b4b0;
-    --text: #f2ecea;
-    --muted: #8d8481;
+    --bg: #0b0e11;
+    --storm: #1b2228;
+    --steel: #c9d2d9;
+    --steel-dim: #7f8b94;
+    --bolt: #e9f3ff;
+    --glow: rgba(200, 225, 255, .55);
+    --text: #eef2f5;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: "Oswald", system-ui, sans-serif;
+    font-family: "Montserrat", system-ui, sans-serif;
     overflow-x: hidden;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
   }
 
-  /* Фон: красное зарево снизу, сетка-металл, виньетка */
-  .bg {
-    position: fixed; inset: 0; z-index: -2;
+  /* Грозовое небо: тучи из шума + тёмные пятна + виньетка */
+  .sky {
+    position: fixed; inset: 0; z-index: -3;
     background:
-      radial-gradient(120% 70% at 50% 115%, rgba(225,15,27,.55), transparent 60%),
-      radial-gradient(60% 40% at 50% 0%, rgba(120,10,10,.25), transparent 70%),
-      repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px),
-      var(--bg);
+      radial-gradient(70% 45% at 50% 30%, rgba(120,135,150,.35), transparent 70%),
+      radial-gradient(50% 35% at 15% 60%, rgba(90,100,112,.25), transparent 70%),
+      radial-gradient(50% 35% at 85% 65%, rgba(90,100,112,.25), transparent 70%),
+      linear-gradient(180deg, #151a1f 0%, #0b0e11 55%, #050607 100%);
   }
-  .bg::after {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.85) 100%);
+  .clouds {
+    position: fixed; inset: -10%; z-index: -2; opacity: .55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1100' viewBox='0 0 1600 1100'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .006' numOctaves='5' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .75 0 0 0 0 .8 0 0 0 0 .85 0 0 0 1.4 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    animation: drift 60s ease-in-out infinite alternate;
   }
-  canvas#embers { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  @keyframes drift { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
+  .vignette {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.9) 100%);
+  }
+  canvas#bolts { position: fixed; inset: 0; z-index: 0; pointer-events: none; mix-blend-mode: screen; }
+  .flash {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(80% 60% at var(--fx, 50%) 10%, rgba(220,235,255,.35), transparent 70%);
+    opacity: 0;
+  }
 
   main {
+    position: relative; z-index: 1;
     flex: 1;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 48px 16px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 16px 32px;
     text-align: center;
-    gap: clamp(20px, 4vh, 40px);
   }
 
-  .kicker {
-    font-weight: 300; letter-spacing: .5em; text-transform: uppercase;
-    font-size: clamp(11px, 2.6vw, 14px); color: var(--muted);
-    padding-left: .5em;
-  }
-
-  h1 {
-    font-family: "Bebas Neue", Impact, sans-serif;
-    font-size: clamp(72px, 22vw, 220px);
-    line-height: .85;
-    letter-spacing: .06em;
-    padding-left: .06em;
-    background: linear-gradient(180deg, #fff 0%, #d9d3d0 38%, #6f6866 52%, #cfc8c5 62%, #fff 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 0 18px rgba(225,15,27,.55)) drop-shadow(0 4px 0 #2a0000);
+  /* Фото группы — чёрно-белое, тонет в тучах */
+  .band {
     position: relative;
-    animation: flicker 6s infinite;
+    width: min(100%, 820px);
+    aspect-ratio: 638 / 409;
+    margin-top: clamp(8px, 3vh, 32px);
   }
-  h1 .slash { color: var(--red); -webkit-text-fill-color: var(--red); }
+  .band img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(1) contrast(1.3) brightness(.6);
+    -webkit-mask-image: radial-gradient(50% 50% at 50% 46%, #000 50%, transparent 100%);
+            mask-image: radial-gradient(50% 50% at 50% 46%, #000 50%, transparent 100%);
+  }
 
-  @keyframes flicker {
-    0%, 92%, 100% { opacity: 1; }
-    93% { opacity: .55; }
-    94% { opacity: 1; }
-    96% { opacity: .7; }
-    97% { opacity: 1; }
+  /* Логотип поверх нижней части фото, как на постере */
+  .logo {
+    position: relative;
+    width: min(92%, 760px);
+    margin-top: clamp(-150px, -16vw, -40px);
+    filter:
+      drop-shadow(0 0 2px rgba(255,255,255,.9))
+      drop-shadow(0 0 22px var(--glow))
+      drop-shadow(0 6px 10px rgba(0,0,0,.9));
+  }
+  .logo svg { width: 100%; height: auto; display: block; }
+
+  .tour {
+    margin-top: clamp(14px, 3vh, 28px);
+    font-weight: 800;
+    font-size: clamp(14px, 3.6vw, 30px);
+    letter-spacing: .42em; padding-left: .42em;
+    color: var(--steel);
+    text-shadow: 0 2px 8px rgba(0,0,0,.9);
   }
 
-  .meta {
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px;
-    font-weight: 500; letter-spacing: .18em; text-transform: uppercase;
-    font-size: clamp(13px, 3.2vw, 18px);
+  .show {
+    margin-top: clamp(16px, 3vh, 30px);
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline;
+    gap: 6px 14px;
+    font-weight: 800;
+    font-size: clamp(16px, 4vw, 26px);
+    letter-spacing: .06em;
+    text-transform: uppercase;
   }
-  .meta span { white-space: nowrap; }
-  .meta .dot { color: var(--red); }
+  .show .date { color: var(--steel-dim); }
+  .show .time {
+    font-weight: 700; color: var(--steel-dim);
+    border-left: 2px solid rgba(201,210,217,.35); padding-left: 14px;
+  }
 
   .timer {
+    margin-top: clamp(22px, 4vh, 40px);
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: clamp(8px, 1.6vw, 18px);
-    width: min(100%, 1100px);
+    gap: clamp(8px, 1.4vw, 16px);
+    width: min(100%, 1000px);
   }
   @media (max-width: 720px) {
     .timer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
   .cell {
     position: relative;
-    padding: clamp(14px, 3vw, 28px) 4px clamp(10px, 2vw, 18px);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 40%),
-      linear-gradient(180deg, #1a1111, #0c0707);
-    border: 1px solid rgba(255,255,255,.08);
-    clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
-    box-shadow: inset 0 0 30px rgba(225,15,27,.12);
+    padding: clamp(12px, 2.4vw, 22px) 4px clamp(10px, 1.8vw, 16px);
+    background: linear-gradient(180deg, rgba(40,48,56,.75), rgba(10,12,14,.85));
+    border: 1px solid rgba(201,210,217,.18);
+    clip-path: polygon(14% 0, 100% 0, 100% 86%, 86% 100%, 0 100%, 0 14%);
   }
-  .cell::before { /* красная кромка */
-    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
-    background: linear-gradient(90deg, transparent, var(--red), transparent);
-    box-shadow: 0 0 14px var(--red);
+  .cell::before {
+    content: ""; position: absolute; left: 10%; right: 10%; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--bolt), transparent);
+    box-shadow: 0 0 10px var(--glow);
   }
   .num {
-    font-family: "Bebas Neue", Impact, sans-serif;
-    font-size: clamp(44px, 9vw, 96px);
+    font-weight: 900;
+    font-size: clamp(34px, 7vw, 72px);
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(255,59,47,.7), 0 0 28px rgba(225,15,27,.45);
+    background: linear-gradient(180deg, #ffffff 0%, #dfe6ec 45%, #8c979f 55%, #e6ecf1 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 8px rgba(200,225,255,.35));
   }
-  .num.tick { animation: hit .35s ease-out; }
+  .num.tick { animation: hit .4s ease-out; }
   @keyframes hit {
-    0% { transform: scale(1.08); color: var(--red-hot); }
-    100% { transform: scale(1); color: #fff; }
+    0% { filter: drop-shadow(0 0 18px rgba(230,240,255,.95)); }
+    100% { filter: drop-shadow(0 0 8px rgba(200,225,255,.35)); }
   }
   .label {
-    margin-top: 6px;
-    font-size: clamp(10px, 2.6vw, 14px);
-    letter-spacing: .3em; padding-left: .3em;
-    text-transform: uppercase; color: var(--steel);
+    margin-top: 8px;
+    font-weight: 700;
+    font-size: clamp(9px, 2.2vw, 12px);
+    letter-spacing: .24em; padding-left: .24em;
+    text-transform: uppercase; color: var(--steel-dim);
   }
 
-  .done {
-    display: none;
-    font-family: "Bebas Neue", Impact, sans-serif;
-    font-size: clamp(48px, 14vw, 140px);
-    color: var(--red-hot);
-    text-shadow: 0 0 20px var(--red), 0 0 60px var(--red);
-    animation: pulse 1.2s ease-in-out infinite;
+  /* Финал: «Добро пожаловать в Кишинёв Арену» */
+  .finale { display: none; margin-top: clamp(22px, 4vh, 40px); }
+  body.is-done .timer, body.is-done .local { display: none; }
+  body.is-done .finale { display: block; }
+  .finale .line {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    font-weight: 900; line-height: 1.05; letter-spacing: .06em;
   }
-  @keyframes pulse { 50% { transform: scale(1.05); } }
-  body.is-done .timer { display: none; }
-  body.is-done .done { display: block; }
-
-  .local {
-    font-size: 13px; font-weight: 300; color: var(--muted); letter-spacing: .05em;
-  }
-
-  /* Бегущая строка с песнями */
-  .ticker {
-    border-top: 1px solid rgba(225,15,27,.5);
-    border-bottom: 1px solid rgba(225,15,27,.5);
-    background: rgba(0,0,0,.55);
-    overflow: hidden; white-space: nowrap;
-    padding: 10px 0;
-  }
-  .ticker-track {
+  .finale .l1 { font-size: clamp(18px, 5.8vw, 64px); }
+  .finale .l2 { font-size: clamp(20px, 6.6vw, 84px); margin-top: .1em; }
+  .finale .word { display: inline-flex; white-space: nowrap; margin: 0 .22em; }
+  .finale .ch {
     display: inline-block;
-    animation: scroll 40s linear infinite;
-    font-family: "Bebas Neue", Impact, sans-serif;
-    font-size: 20px; letter-spacing: .15em; color: var(--steel);
+    color: #f4f8fb;
+    text-shadow: 0 0 6px rgba(200,225,255,.5), 0 3px 8px rgba(0,0,0,.9);
+    animation:
+      land .9s cubic-bezier(.2,.9,.25,1.15) var(--d) both,
+      wave 3.2s ease-in-out calc(var(--d) + 1.2s) infinite;
   }
-  .ticker-track span { margin: 0 18px; }
-  .ticker-track i { color: var(--red); font-style: normal; }
-  @keyframes scroll { to { transform: translateX(-50%); } }
+  @keyframes land {
+    0%   { opacity: 0; transform: translateY(-60px) scale(2.2); filter: blur(14px); color: #fff; }
+    60%  { opacity: 1; filter: blur(0); text-shadow: 0 0 30px #fff, 0 0 60px rgba(170,205,255,1); }
+    100% { opacity: 1; transform: none; filter: blur(0); }
+  }
+  @keyframes wave {
+    0%, 70%, 100% { text-shadow: 0 0 6px rgba(200,225,255,.5), 0 3px 8px rgba(0,0,0,.9); }
+    35% { text-shadow: 0 0 14px #fff, 0 0 36px rgba(170,205,255,.95), 0 3px 8px rgba(0,0,0,.9); color: #fff; }
+  }
+  .finale .sub {
+    margin-top: clamp(14px, 2.6vh, 24px);
+    font-weight: 800; font-size: clamp(11px, 2.6vw, 16px);
+    letter-spacing: .4em; padding-left: .4em; color: var(--steel-dim);
+    animation: fadeUp 1.2s ease-out var(--d) both;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
+  .whiteout {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    background: radial-gradient(circle at 50% 30%, #fff, #dfeaff 60%, #9fb4cc);
+    opacity: 0;
+  }
+
+  .local { margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--steel-dim); }
+
+  .tickets {
+    margin-top: clamp(22px, 4vh, 36px);
+    font-weight: 800;
+    font-size: clamp(13px, 3vw, 20px);
+    letter-spacing: .28em; padding-left: .28em;
+    color: var(--steel-dim);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .tickets b { color: var(--steel); }
+  .tickets:hover b { color: #fff; text-shadow: 0 0 12px var(--glow); }
 
   @media (prefers-reduced-motion: reduce) {
-    h1, .num.tick, .done, .ticker-track { animation: none; }
+    .clouds, .num.tick, .done { animation: none; }
   }
 </style>
 </head>
 <body>
-  <div class="bg"></div>
-  <canvas id="embers"></canvas>
+  <div class="sky"></div>
+  <div class="clouds"></div>
+  <div class="vignette"></div>
+  <canvas id="bolts"></canvas>
+  <div class="flash" id="flash"></div>
+  <div class="whiteout" id="whiteout"></div>
 
   <main>
-    <p class="kicker">Live in concert</p>
-    <h1>SKILLET</h1>
-    <div class="meta">
-      <span>Кишинёв</span><span class="dot">✦</span>
-      <span>25 июля 2027</span><span class="dot">✦</span>
-      <span>18:00</span>
+    <div class="band"><img src="band.jpg" alt="Группа Skillet"></div>
+
+    <h1 class="logo" aria-label="Skillet">
+      <svg viewBox="0 0 1480.7 413.4" role="img" aria-hidden="true">
+        <defs>
+          <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5d6870"/>
+            <stop offset=".35" stop-color="#2a3137"/>
+            <stop offset=".55" stop-color="#14181b"/>
+            <stop offset=".8" stop-color="#2c343a"/>
+            <stop offset="1" stop-color="#4a545b"/>
+          </linearGradient>
+          <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset=".5" stop-color="#9aa7b1"/>
+            <stop offset="1" stop-color="#e8eef3"/>
+          </linearGradient>
+        </defs>
+        <g fill="url(#steel)" stroke="url(#edge)" stroke-width="5" stroke-linejoin="miter">
+          <polygon points="428.6,142.1 445,89.2 126.8,89.2 106.5,108.4 71,142.1 50.1,161.9 59.4,183 58.8,183 59.9,184.3 80.9,231.9 218.5,231.9 227.2,251.5 204.7,272.7 68.6,272.7 0,325.6 231.1,325.6 249.6,308.1 251.3,306.4 307.7,252.9 298.5,231.9 299.1,231.9 297.9,230.6 277,183 139.3,183 130.7,163.4 153.1,142.1 357.1,142.1 316.6,272.9 310.9,291.2 287.5,366.7 371.6,326 393.4,255.7 408.9,205.5"/>
+          <polygon points="592.3,258.5 543.6,185.1 536.6,174.5 652.4,89.2 566.7,89.2 508.4,132.1 453.4,172.7 432.6,188 407.3,269.9 481.6,215.1 517.5,269.3 500,325.9 571.5,325.9 588.5,271"/>
+          <polygon points="901.2,232.1 916.3,183.3 973.1,0 889,40.6 844.8,183.3 829.7,232.1 817,273.2 800.6,326.1 1135.3,326.1 1193.3,281.6 1204.3,273.2 888.5,273.2"/>
+          <polygon points="867.9,0 783.8,40.6 684.7,360.5 668.4,413.4 891.4,413.4 949.4,369 960.4,360.5 756.3,360.5"/>
+          <polygon points="743.5,89.2 672,89.2 586.1,366.7 670.2,326"/>
+          <polygon points="987.5,89.2 971.1,142.1 958.3,183.3 943.2,232.1 936.2,254.9 1007.7,254.9 1014.7,232.1 1167.3,232.1 1225.2,187.6 1230.8,183.3 1029.8,183.3 1042.6,142.1 1269.7,142.1 1211.1,331.3 1295.2,290.6 1341.2,142.1 1411.7,142.1 1469.1,98.1 1480.7,89.2"/>
+        </g>
+      </svg>
+    </h1>
+
+    <p class="tour">AFTER THE STORM TOUR</p>
+
+    <div class="show">
+      <span class="date">25/7</span>
+      <span>Chișinău, Moldova</span>
+      <span class="time">18:00</span>
     </div>
 
-    <section class="timer" aria-live="off">
-      <div class="cell"><div class="num" id="mo">00</div><div class="label" id="lmo">месяцев</div></div>
+    <section class="timer">
+      <div class="cell"><div class="num" id="mo">0</div><div class="label" id="lmo">месяцев</div></div>
       <div class="cell"><div class="num" id="w">0</div><div class="label" id="lw">недель</div></div>
       <div class="cell"><div class="num" id="d">0</div><div class="label" id="ld">дней</div></div>
       <div class="cell"><div class="num" id="h">00</div><div class="label" id="lh">часов</div></div>
       <div class="cell"><div class="num" id="m">00</div><div class="label" id="lm">минут</div></div>
       <div class="cell"><div class="num" id="s">00</div><div class="label" id="ls">секунд</div></div>
     </section>
-    <div class="done">Шоу начинается!</div>
+    <div class="finale" id="finale" aria-label="Добро пожаловать в Кишинёв Арену">
+      <div class="line l1" aria-hidden="true">ДОБРО ПОЖАЛОВАТЬ</div>
+      <div class="line l2" aria-hidden="true">В КИШИНЁВ АРЕНУ</div>
+      <p class="sub">SKILLET · AFTER THE STORM TOUR</p>
+    </div>
 
     <p class="local" id="local"></p>
-  </main>
 
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-track" id="ticker"></div>
-  </div>
+    <a class="tickets" href="https://skillet.com" target="_blank" rel="noopener">Tickets at <b>skillet.com</b></a>
+  </main>
 
 <script>
   // 25.07.2027 18:00 по Кишинёву — летом там UTC+3 (EEST)
-  const TARGET = new Date("2027-07-25T18:00:00+03:00").getTime();
+  // Ссылка с #finale — проверка финала: отсчёт с 5 секунд
+  const TEST = location.hash === "#finale";
+  const TARGET = TEST ? Date.now() + 5000 : new Date("2027-07-25T18:00:00+03:00").getTime();
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const el = id => document.getElementById(id);
   const plural = (n, one, few, many) => {
@@ -235,7 +320,7 @@
 
   function tick() {
     const now = Date.now();
-    if (TARGET - now <= 0) { document.body.classList.add("is-done"); return; }
+    if (TARGET - now <= 0) { finale(); return; }
     let months = 0;
     while (addMonths(now, months + 1) <= TARGET) months++;
     const s = Math.floor((TARGET - addMonths(now, months)) / 1000);
@@ -248,63 +333,95 @@
     set("s", String(s % 60).padStart(2, "0"), "ls", ["секунда", "секунды", "секунд"]);
     setTimeout(tick, 1000 - (Date.now() % 1000));
   }
-  tick();
+  // Финал: тройная молния, белая вспышка, буквы влетают по одной
+  let done = false;
+  function finale() {
+    if (done) return;
+    done = true;
+    let i = 0;
+    for (const line of document.querySelectorAll("#finale .line")) {
+      const words = line.textContent.split(" ");
+      line.textContent = "";
+      for (const w of words) {
+        const word = document.createElement("span");
+        word.className = "word";
+        for (const c of w) {
+          const ch = document.createElement("span");
+          ch.className = "ch";
+          ch.textContent = c;
+          ch.style.setProperty("--d", (.35 + i++ * .07) + "s");
+          word.appendChild(ch);
+        }
+        line.appendChild(word);
+      }
+    }
+    document.querySelector("#finale .sub").style.setProperty("--d", (.6 + i * .07) + "s");
+    document.body.classList.add("is-done");
+    if (!reduceMotion) {
+      bolt([W * .2, W * .5, W * .8]);
+      el("whiteout").animate([{ opacity: 0 }, { opacity: .95, offset: .1 }, { opacity: .3, offset: .25 },
+        { opacity: .8, offset: .35 }, { opacity: 0 }], { duration: 1400, easing: "ease-out" });
+    }
+  }
 
   // Если вы не в Молдове — показать время начала по вашим часам
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (tz !== "Europe/Chisinau") {
+  if (tz !== "Europe/Chisinau" && !TEST) {
     el("local").textContent = "По вашему времени: " + new Date(TARGET).toLocaleString("ru-RU",
       { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
-  // Бегущая строка
-  const songs = ["Monster", "Hero", "Awake and Alive", "Feel Invincible", "Comatose",
-    "Whispers in the Dark", "Rise", "Legendary", "Unleashed", "Dominion", "Victorious", "Not Gonna Die"];
-  const row = songs.map(t => `<span>${t}</span><i>✦</i>`).join("");
-  el("ticker").innerHTML = row + row;
-
-  // Искры, летящие вверх
-  const cv = el("embers"), ctx = cv.getContext("2d");
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let W, H, parts = [];
+  // Молнии: ветвистый разряд сверху + вспышка неба
+  const cv = el("bolts"), ctx = cv.getContext("2d"), flash = el("flash");
+  let W, H;
   function resize() {
     const dpr = Math.min(devicePixelRatio || 1, 2);
     W = innerWidth; H = innerHeight;
     cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  function spawn(initial) {
-    return {
-      x: Math.random() * W,
-      y: initial ? Math.random() * H : H + 10,
-      r: Math.random() * 1.8 + .4,
-      vy: Math.random() * .9 + .3,
-      vx: (Math.random() - .5) * .4,
-      life: Math.random() * .6 + .4,
-      hue: 10 + Math.random() * 25
-    };
-  }
-  function frame() {
-    ctx.clearRect(0, 0, W, H);
-    for (const p of parts) {
-      p.y -= p.vy; p.x += p.vx + Math.sin(p.y / 40) * .2;
-      const a = Math.max(0, p.y / H) * p.life;
-      ctx.beginPath();
-      ctx.fillStyle = `hsla(${p.hue},100%,60%,${a})`;
-      ctx.shadowColor = `hsla(${p.hue},100%,50%,${a})`;
-      ctx.shadowBlur = 8;
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      if (p.y < -10) Object.assign(p, spawn(false));
-    }
-    requestAnimationFrame(frame);
-  }
   resize();
   addEventListener("resize", resize);
-  if (!reduce) {
-    const count = Math.round(Math.min(120, W / 10));
-    for (let i = 0; i < count; i++) parts.push(spawn(true));
-    frame();
+
+  function branch(x, y, angle, len, width, depth, segs) {
+    const pts = [[x, y]];
+    for (let i = 0; i < segs; i++) {
+      angle += (Math.random() - .5) * .9;
+      x += Math.sin(angle) * len; y += Math.cos(angle) * len;
+      pts.push([x, y]);
+      if (depth < 3 && Math.random() < .14) {
+        branch(x, y, angle + (Math.random() < .5 ? -1 : 1) * (.4 + Math.random() * .6),
+               len * .75, width * .5, depth + 1, Math.floor(segs * .45));
+      }
+      if (y > H * .75) break;
+    }
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (const [px, py] of pts) ctx.lineTo(px, py);
+    ctx.lineWidth = width;
+    ctx.stroke();
   }
+
+  function bolt(xs) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(235,245,255,.95)";
+    ctx.shadowColor = "rgba(170,205,255,1)";
+    ctx.shadowBlur = 18;
+    ctx.lineJoin = "miter";
+    for (const x of xs) branch(x, -10, (Math.random() - .5) * .5, Math.max(14, H / 40), 2.4, 0, 60);
+
+    flash.style.setProperty("--fx", (xs[0] / W * 100) + "%");
+    flash.animate([{ opacity: 0 }, { opacity: 1, offset: .08 }, { opacity: .2, offset: .2 },
+                   { opacity: .8, offset: .3 }, { opacity: 0 }], { duration: 700, easing: "ease-out" });
+    cv.animate([{ opacity: 1 }, { opacity: .3, offset: .2 }, { opacity: 1, offset: .3 }, { opacity: 0 }],
+               { duration: 900, easing: "ease-out", fill: "forwards" });
+  }
+  // После финала молнии бьют чаще
+  function storm() {
+    bolt([W * (.1 + Math.random() * .8)]);
+    setTimeout(storm, done ? 1500 + Math.random() * 2500 : 3500 + Math.random() * 6000);
+  }
+  if (!reduceMotion) setTimeout(storm, 1200);
+  tick();
 </script>
 </body>
 </html>
